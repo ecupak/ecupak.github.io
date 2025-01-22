@@ -1,0 +1,87 @@
+---
+---
+
+@import "{{ site.theme }}";
+
+
+$dark1: #404040;
+$dark2: #505050;
+$dark3: #606060;
+
+.header1-swipe
+{
+    text-indent: 20px;
+    background: $dark1;
+    color: $background-color;    
+}
+
+.header2-swipe
+{
+    text-indent: 30px;
+    background: $dark2;
+    color: $background-color;
+}
+
+.header3-swipe
+{
+    text-indent: 40px;
+    background: $dark3;
+    color: $background-color;    
+}
+
+// Inline code.
+
+pre > code {
+    background-color: #303030;
+}
+
+// Code blocks.
+.highlighter-rouge .highlight {
+    background-color: #303030;
+}
+
+.highlight .c1, // single-line comments
+.highlight .cm // block comments
+{
+    color: #6acc5b;
+    font-style: italic;
+}
+
+.highlight .kt, .highlight .kv, // types
+.highlight .nl, // accessors
+.highlight .kr // inline
+{
+    color: #569CD6;
+    font-weight: bold;
+}
+
+.highlight .k // class, const, return, enum
+{
+color: #4EC9B0;
+}
+
+.highlight .n, // func name
+.highlight .p, // brackets
+.highlight .nc, // class name
+.highlight .o // parameter
+{
+        color: #CCCCCC;   
+}
+
+.highlight .mi, // number literal
+.highlight .mf, // float literal
+.highlight .mb  // binary literal
+{
+    color: #B8D7A3;
+}
+
+.highlight .cpf,  // include strings 
+.highlight .s     // string literal
+{
+    color: #D69D85;
+}
+
+.highlight .nf // function name
+{
+    color: #DCDCAA;   
+}
