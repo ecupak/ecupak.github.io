@@ -8,11 +8,21 @@ $dark1: #404040;
 $dark2: #505050;
 $dark3: #606060;
 
+main
+{
+    background-image: linear-gradient(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.95)), url("media/vornoi_bg.jpg");    
+    min-height: 100%;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-position: center;
+    background-size: cover;
+}
+
 .header1-swipe
 {
     text-indent: 20px;
     background: $dark1;
-    color: $background-color;    
+    color: $background-color;
 }
 
 .header2-swipe
@@ -26,11 +36,50 @@ $dark3: #606060;
 {
     text-indent: 40px;
     background: $dark3;
-    color: $background-color;    
+    color: $background-color;
+}
+
+.sticky
+{
+    position: sticky;
+    top: 0px;
+    background-color: $background-color;
+    z-index: 5000;
+}
+
+table
+{
+    text-align: right; 
+    max-width: 50%; 
+    margin: auto;
+}
+
+tbody tr:nth-child(odd), tbody tr:nth-child(even)
+{
+    background-color: #EEEEEE;
+}
+
+table td
+{
+    border: 1px solid #AAAAAA;
+}
+
+img.custom
+{
+  border: 1px white solid;
+}
+
+img.scaling150
+{
+  transition: 0.5s ease-in-out;
+
+  &:hover
+  {
+    transform: scale(1.5);
+  }
 }
 
 // Inline code.
-
 pre > code {
     background-color: #303030;
 }

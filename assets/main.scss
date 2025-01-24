@@ -47,6 +47,38 @@ main
     z-index: 5000;
 }
 
+table
+{
+    text-align: right; 
+    max-width: 50%; 
+    margin: auto;
+}
+
+tbody tr:nth-child(odd), tbody tr:nth-child(even)
+{
+    background-color: #EEEEEE;
+}
+
+table td
+{
+    border: 1px solid #AAAAAA;
+}
+
+img.custom
+{
+  border: 1px white solid;
+}
+
+img.scaling150
+{
+  transition: 0.5s ease-in-out;
+
+  &:hover
+  {
+    transform: scale(1.5);
+  }
+}
+
 // Inline code.
 pre > code {
     background-color: #303030;

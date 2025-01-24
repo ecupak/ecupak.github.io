@@ -1,7 +1,7 @@
 ---
 layout: post
-title:  "Dynamic Agents using Steering Behaviors and Flow Fields in C++"
-date:   2025-01-22 13:55:45 +0100
+title:  "Dynamic Agents using Steering Behaviors and Flow Fields in C++ [1/3]"
+date:   2025-01-24 13:55:45 +0100
 categories: jekyll update
 ---
 
@@ -11,17 +11,17 @@ My recent student project at BUas (Breda University of Applied Science) covered 
 
 The final product was a system that allowed agents to easily enable and disable the behaviors to use as well as adjust the settings of those behaviors. In addition, via ImGui you could adjust those same settings and see their effects during runtime - either on a per-agent basis or for all agents of a class.
 
-In this post I want to cover the ideas behind what I learned as well as share the code I implemented. I have divided this post into 3 parts:
+I want to cover the ideas behind what I learned as well as share the code I implemented. I have divided this into 3 parts / posts. This is part 1 of 3:
 
-- **Part 1** covers the basics of steering behaviors, how they work with the physics system, and the C++ implementation of 9 steering behaviors (seek, flee, pursue, evade, arrive, wander, separate, align, and gather).
+- **Part 1** covers the basics of steering behaviors, how they work with the physics system, and the C++ implementation of 9 steering behaviors (Seek, Flee, Pursue, Evade, Arrive, Wander, Separate, Align, and Gather).
 
-- **Part 2** covers the basics of flow fields, how to construct one, the C++ implementation of a working flow field, how to add bilinear interpolation, and how to handle dynamic objects moving across the flow field.
+- Part 2 covers the basics of flow fields, how to construct one, the C++ implementation of a working flow field, how to add bilinear interpolation, and how to handle dynamic objects moving across the flow field.
 
-- **Part 3** covers how to combine the steering behavior and flow fields into a steering system, how to modify agents during runtime with new behaviors, and how the steering system and agents communicate.
+- Part 3 covers how to combine the steering behavior and flow fields into a steering system, how to modify agents during runtime with new behaviors, and how the steering system and agents communicate.
 
 I will explain everything within a 2D system / world. 
 
-For my project, [EnTT](https://github.com/skypjack/entt) (an entity component system (ECS)) was utilized and was instrumental in putting all the pieces together; I have not considered the architecture for an engine without an ECS. The value of Part 3 may vary wildly depending on if you are using an ECS or not.
+For my project, [EnTT](https://github.com/skypjack/entt) (an entity component system (ECS)) was utilized and was instrumental in putting all the pieces together; I have not considered the architecture for an engine without an ECS.
 
 I also used [glm](https://github.com/g-truc/glm) as my math library. You'll see it in the C++ code snippets but should be able to easily swap it out for whatever you prefer.
 
@@ -35,13 +35,15 @@ To those that are already familiar with the behaviors he describes, be aware tha
 
 <h4 class="header2-swipe">How They Work</h4>
 
-Every steering behavior works by calculating a steering force and applying it to the agent's velocity. The steering force is the difference between the agent's velocity and the desired velocity of the behavior (thus it steers the agent towards where the behavior wants them to go).
+Every steering behavior works by calculating a steering force and applying it to the agent's velocity. The steering force is the difference between the agent's velocity and the desired velocity of the behavior (it is a vector); thus, it steers the agent towards where the behavior wants them to go.
 
 Calculating the steering force will be covered later in the C++ implementation section. Let's first look at what we do once we have the steering force:
 - The steering force is truncated by the agent's maximum allowed force.
 - Acceleration is calculated and applied to the agent's velocity.
 - The agent's velocity is then truncated by the agent's maximum allowed velocity.
 - Finally, the agent's velocity is applied to their position.
+
+The agent can have more than 1 behavior enabled at a time, and the final steering force will be the sum of each behavior's steering force. This means the final steering force could be a very large vector that may be inappropriate to apply directly to our agent. That is why we set a maximum force and limit the final steering force by it.
 
 You can easily imagine that the agent's maximum force and velocity might change depending on how they are moving around the world - running on foot, in a car, or on a horse. All these different methods of moving around are contained in a Vehicle class (don't get too wrapped up in the name Vehicle - it's just a name to symbolize a method of moving).
 
@@ -279,6 +281,8 @@ There are additional ECS lines here. Both receive a pointer to the component if 
 
 A shared `GetPredicatedPoint()` method is used by both Pursue and Evade (the next behavior). It looks like this:
 
+Lastly, I merged a behavior called *Offset Pursuit* into Pursue. By setting an offset angle and an offset distance, the agent can chase a point that is offset from the actual target. This could be useful if you wanted a sheepdog to make a sheep move to the right - the sheepdog would pursue a point offset to the left of the sheep (assuming the sheep would Flee from the sheepdog).
+
 ```cpp
 static glm::vec2 GetPredictedPoint(const PhysicsBody& body, float my_speed, const PhysicsBody& target_body)
 {
@@ -350,7 +354,7 @@ static void Evade(Entity me, Vehicle& vehicle, Personality& data, const PhysicsB
       if (entity == me) continue;
 
       // Check if entity is something to flee from.
-      if (CheckBitFlagOverlap(data.m_evade.m_layer_list.Get(), layer.Idx))
+      if (CheckBitFlagOverlap(data.m_evade.m_layer_list, layer.Idx))
       {
         // Only flee if entity is too close.
         if (float distance_to_threat{ glm::distance2(body.GetPosition(), target_body.GetPosition()) };
@@ -618,7 +622,7 @@ static void Align(Entity me, Vehicle& vehicle, Personality& data, SB_KD_Tree& kd
       desired_distance2,
       neighbors_data,
       data.m_max_neighbor_count,
-      data.m_align.m_layer_list.Get(),
+      data.m_align.m_layer_list,
       data.m_align.m_use_exact_match
     };
 
@@ -688,7 +692,7 @@ static void Gather(Entity, Vehicle& vehicle, Personality& data, SB_KD_Tree& kd_t
       desired_distance2,
       neighbors_data,
       data.m_max_neighbor_count,
-      data.m_gather.m_layer_list.Get(),
+      data.m_gather.m_layer_list,
       data.m_gather.m_use_exact_match
     };
 
@@ -738,7 +742,9 @@ In this behavior, we want to include the current agent in the calculations for t
 
 We make a check for `nan` because the current agent could very well be at the center of mass.
 
-In practice, I had a difficult time balancing this behavior with the rest. Generally, I had to set the weight much lower than expected, but this made Gather sluggish (as you would expect). But leaving the weight equal to Separate's weight causes agents to rush towards each other. Values inbetween give varying results, and depending on where the agent is and where the center of mass is the movement can veer from normal to abnormal. I suspect the calculation for `desired_velocity` is the problem line, but would need to play around with it more to have an idea of what exactly needs to be done.
+In practice, I had a difficult time balancing this behavior with the rest. Generally, I had to set the weight much lower than expected, but this made Gather sluggish (as you would expect). But leaving the weight equal to Separate's weight causes agents to rush towards each other (I tried to match Separate's weight so the agent would achieve equilibrium).
+
+Regardless of any value chosen, the degree of abnormality in the agent's movement seemed tied to the distance from the agent to the center of mass. I suspect the calculation for `desired_velocity` is the problem line, but would need to play around with it more to have an idea of what exactly needs to be done.
 
 <h4 class="header3-swipe">Separate, Align, & Gather: Flocking</h4>
 
@@ -750,3 +756,25 @@ As promised, here's what flocking looked like in my project. In addition to floc
         <em>Flocking behavior in action. Separate (orange circles), Align (small purple circles), and Gather (green circles). Agents flee (large purple circles) from the player, who is also at the location of their Seek target (white square). As the agents move away from the target, the cluster into groups based on their nearest neighbors.</em>
     </figcaption>
 </figure>
+
+<h4 class="header2-swipe">Part 1 Conclusion</h4>
+
+We've now covered the components I used to support steering behaviors as well as 9 behaviors.
+
+My agent needs:
+- A Vehicle: to define its method of movement and apply the steering forces to the physics body.
+- A Physics Body: to track velocity and be moved around the world by a physics system.
+- A Layer: (a bitfield) to describe what category the agent belongs to so neighbor searches can keep or discard the agent.
+- A Personality: to define the per-agent settings for each behavior.
+
+The 9 behaviors covered are not all of the behaviors described by Craig Reynolds. During my project I was limited by time and did not implement *Obstacle Avoidance, Path Following, Wall Following, Containment, Unaligned Collision Avoidance, or Leader Following*. Some of these are basic behaviors and some are complex.
+
+The next post will look at flow fields.
+
+<br/>
+
+<h3 class="header1-swipe">&nbsp;</h3>
+
+<div style="text-align: center;">
+  <img src="/assets/media/buas_logo.png" type="png" style="border: 1px white solid; max-width: 100%;">
+</div>
